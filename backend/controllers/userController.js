@@ -296,5 +296,6 @@ export {
   bookAppointment,
   listAppointment,
   cancelAppointment,
-  paymentRazorpay
+  paymentRazorpay,
+  verifyRazorpay
 };

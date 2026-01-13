@@ -63,7 +63,7 @@ const loginDoctor = async (req, res) => {
 const appointmentsDoctor = async (req, res) => {
     try {
 
-        const { docId } = req.body
+        const docId = req.docId
         const appointments = await appointmentModel.find({ docId })
 
         res.json({ success: true, appointments })
@@ -81,7 +81,8 @@ const appointmentsDoctor = async (req, res) => {
 const appointmentComplete = async (req, res) => {
     try {
 
-        const { docId, appointmentId } = req.body
+        const docId = req.docId
+        const { appointmentId } = req.body
 
         const appointmentData = await appointmentModel.findById(appointmentId)
 
@@ -104,7 +105,8 @@ const appointmentComplete = async (req, res) => {
 const appointmentCancel = async (req, res) => {
     try {
 
-        const { docId, appointmentId } = req.body
+        const docId = req.docId
+        const { appointmentId } = req.body
 
         const appointmentData = await appointmentModel.findById(appointmentId)
 
@@ -129,7 +131,7 @@ const doctorDashboard = async (req, res) => {
 
     try {
 
-        const { docId } = req.body
+        const docId = req.docId
 
         const appointments = await appointmentModel.find({ docId })
 
@@ -170,7 +172,7 @@ const doctorProfile = async (req, res) => {
 
     try {
 
-        const { docId } = req.body
+        const docId = req.docId
         const profileData = await doctorModel.findById(docId).select('-password')
 
         res.json({ success: true, profileData })
@@ -187,7 +189,8 @@ const updateDoctorProfile = async (req, res) => {
 
     try {
 
-        const { docId, fees, address, available } = req.body
+        const docId = req.docId
+        const { fees, address, available } = req.body
 
         await doctorModel.findByIdAndUpdate(docId, { fees, address, available })
 
@@ -201,7 +204,7 @@ const updateDoctorProfile = async (req, res) => {
 }
 
 export {
-    changeAvailablity,
+    changeAvailability,
     doctorList,
     loginDoctor,
     appointmentsDoctor,

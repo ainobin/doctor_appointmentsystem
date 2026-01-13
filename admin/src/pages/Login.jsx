@@ -29,7 +29,7 @@ const Login = () => {
       } else {
         // Add Doctor login logic here if needed
 
-        const {data}=await axios.post(backendUrl + '/api/admin/login',{email,password}) 
+        const {data}=await axios.post(backendUrl + '/api/doctor/login',{email,password}) 
         if (data.success) {
           // Store token in local storage and state
           localStorage.setItem('dToken', data.token)

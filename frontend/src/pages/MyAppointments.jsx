@@ -90,17 +90,6 @@ const appointmentRazorpay = async (appointmentId) => {
   }
 }
 
-
-
-
- }
-
-
-
-
-
-
-
   useEffect(() => {
     if (token) {
       getUserAppointments()
@@ -139,5 +128,6 @@ const appointmentRazorpay = async (appointmentId) => {
       </div>
     </div>
   )
+}
 
 export default MyAppointments

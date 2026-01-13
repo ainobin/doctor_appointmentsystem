@@ -18,6 +18,7 @@ const AddDoctor = () => {
     const [degree, setDegree] = useState('')
     const [address1, setAddress1] = useState('')
     const [address2, setAddress2] = useState('')
+    const [loading, setLoading] = useState(false)
 
     const { backendUrl, aToken } = useContext(AdminContext)
 
@@ -28,6 +29,8 @@ const AddDoctor = () => {
             if (!docImg) {
                 return toast.error('Image not selected')
             }
+
+            setLoading(true)
 
             // Form data prepare  logic (Backend-e pathanor jonno)
             const formData = new FormData()
@@ -50,12 +53,27 @@ const AddDoctor = () => {
             const { data } = await axios.post(backendUrl + '/api/admin/add-doctor', formData ,{headers:{aToken}})
             if (data.success) { 
                 toast.success(data.message)
+                // Reset form
+                setDocImg(false)
+                setName('')
+                setEmail('')
+                setPassword('')
+                setExperience('1 Year')
+                setFees('')
+                setAbout('')
+                setSpeciality('General Physician')
+                setDegree('')
+                setAddress1('')
+                setAddress2('')
             } else {
               toast.error(data.message)
              }
         } catch (error) {
-           
-        } 
+            console.log(error)
+            toast.error(error.message)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -141,7 +159,13 @@ const AddDoctor = () => {
                     <textarea onChange={(e) => setAbout(e.target.value)} value={about} className='w-full px-4 pt-2 border rounded' placeholder='write about doctor' rows={5} required />
                 </div>
 
-                <button type='submit' className='bg-primary px-10 py-3 mt-4 text-white rounded-full'>Add doctor</button>
+                <button 
+                    type='submit' 
+                    disabled={loading}
+                    className={`${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-primary-dark'} px-10 py-3 mt-4 text-white rounded-full transition-all`}
+                >
+                    {loading ? 'Adding Doctor...' : 'Add doctor'}
+                </button>
             </div>
         </form>
     )

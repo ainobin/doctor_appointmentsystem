@@ -58,7 +58,7 @@ const getAllAppointments = async () => {
         toast.error(error.message);
     }
 }
-const cancelAppointment=async(appointment)=>{
+const cancelAppointment=async(appointmentId)=>{
     try{
    const {data}=await axios.post(backendUrl+'/api/admin/cancel-appointment',{appointmentId},{headers:{aToken}})
    if(data.success){
