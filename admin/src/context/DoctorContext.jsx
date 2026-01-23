@@ -1,4 +1,4 @@
-import { createContext, useState } from "react";
+import { createContext, useState, useEffect } from "react";
 import axios from 'axios'
 import { toast } from 'react-toastify'
 export const DoctorContext = createContext();
@@ -7,10 +7,10 @@ const DoctorContextProvider = (props) => {
     
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-    const [dToken, setDToken] = useState(localStorage.getItem('dToken') ? localStorage.getItem('dToken') : '');
+    const [dToken, setDToken] = useState(localStorage.getItem('dToken') || '');
     const [appointments, setAppointments] = useState([])
-    const [dashData,setDashData]=useState(false)
-    const [profileData,setProfileData]=useState(false)
+    const [dashData,setDashData]=useState(null)
+    const [profileData,setProfileData]=useState(null)
 
    const getAppointments = async () => {
         try {
@@ -99,8 +99,49 @@ const getProfileData = async () => {
     }
 }
 
+const addPrescription = async (prescriptionData) => {
+    try {
+        const { data } = await axios.post(backendUrl + '/api/doctor/add-prescription', prescriptionData, { headers: { dToken } })
+        
+        if (data.success) {
+            toast.success(data.message)
+            return true
+        } else {
+            toast.error(data.message)
+            return false
+        }
+    } catch (error) {
+        console.log(error)
+        toast.error(error.message)
+        return false
+    }
+}
+
+const getPatientHistory = async (userId) => {
+    try {
+        const { data } = await axios.get(backendUrl + `/api/doctor/patient-history/${userId}`, { headers: { dToken } })
+        
+        if (data.success) {
+            return data.prescriptions
+        } else {
+            toast.error(data.message)
+            return []
+        }
+    } catch (error) {
+        console.log(error)
+        toast.error(error.message)
+        return []
+    }
+}
 
 
+useEffect(() => {
+    if (dToken) {
+      localStorage.setItem('dToken', dToken)
+    } else {
+      localStorage.removeItem('dToken')
+    }
+  }, [dToken])
 
 
 
@@ -110,7 +151,8 @@ const value = {
         backendUrl,
         appointments,setAppointments,
         getAppointments,completeAppointment,cancelAppointment,
-        dashData,setDashData,getDashData,profileData,setProfileData,getProfileData
+        dashData,setDashData,getDashData,profileData,setProfileData,getProfileData,
+        addPrescription,getPatientHistory
     }
 
     return (

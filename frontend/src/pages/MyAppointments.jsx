@@ -7,6 +7,9 @@ const MyAppointments = () => {
 
   const { backendUrl, token ,getDoctorsData} = useContext(AppContext)
   const [appointments, setAppointments] = useState([])
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [selectedAppointment, setSelectedAppointment] = useState(null)
+  const [transactionId, setTransactionId] = useState('')
 
   const months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -46,49 +49,40 @@ const MyAppointments = () => {
       toast.error(error.message)
     }
   }
-const initPay = (order) => {
-  const options = {
-    key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-    amount: order.amount,
-    currency: order.currency,
-    name: 'Appointment Payment',
-    description: 'Appointment Payment',
-    order_id: order.id,
-    receipt: order.receipt,
-    handler: async (response) => {
-      console.log(response)
-    try{
-      const {data}=await axios.post(backendUrl+'/api/user/verifyRazorpay',response,{header:token})
-      if(data.success){
+
+  const handlePayOnline = (appointment) => {
+    setSelectedAppointment(appointment)
+    setTransactionId('')
+    setShowPaymentModal(true)
+  }
+
+  const submitBkashPayment = async () => {
+    if (!transactionId.trim()) {
+      toast.error('Please enter transaction ID')
+      return
+    }
+
+    try {
+      const { data } = await axios.post(
+        backendUrl + '/api/user/submit-bkash-payment',
+        { appointmentId: selectedAppointment._id, transactionId },
+        { headers: { token } }
+      )
+
+      if (data.success) {
+        toast.success(data.message)
+        setShowPaymentModal(false)
+        setSelectedAppointment(null)
+        setTransactionId('')
         getUserAppointments()
-        navigate('/my-appointments')
+      } else {
+        toast.error(data.message)
       }
-    } catch(error){
+    } catch (error) {
       console.log(error)
       toast.error(error.message)
-
-    }
-
-
     }
   }
-
-  const rzp = new window.Razorpay(options);
-  rzp.open();
-};
-
-const appointmentRazorpay = async (appointmentId) => {
-  try {
-    const { data } = await axios.post(backendUrl + '/api/user/payment-razorpay', { appointmentId });
-
-    if (data.success) {
-      initPay(data.order);
-    }
-    
-  } catch (error) {
-    console.log(error);
-  }
-}
 
   useEffect(() => {
     if (token) {
@@ -117,15 +111,63 @@ const appointmentRazorpay = async (appointmentId) => {
             </div>
             <div></div>
             <div className='flex flex-col gap-2 justify-end'>
-              { !item.cancelled && item.payment && !item.isCompleted &&<button className='sm:min-w-48 py-2 border rounded text-stone-500 bg-indigo-50'>Paid</button>} 
-              {!item.cancelled && !item.payment && !item.isCompleted && <button onClick={()=>appointmentRazorpay(item._id)} className='text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300'>Pay Online</button>}
-              {!item.cancelled && !item.isCompleted &&<button onClick={() => cancelAppointment(item._id)} className='text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-red-600 hover:text-white transition-all duration-300'>Cancel appointment</button>}
-              {item.cancelled && !item.isCompleted &&<button className='sm:min-w-48 py-2 border border-red-500 rounded text-red-500'>Appointment cancelled</button>}
+              {!item.cancelled && item.payment && !item.isCompleted && <button className='sm:min-w-48 py-2 border rounded text-stone-500 bg-green-50'>Paid</button>}
+              {!item.cancelled && !item.payment && !item.isCompleted && <button onClick={() => handlePayOnline(item)} className='text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300'>Pay Online</button>}
+              {!item.cancelled && !item.isCompleted && <button onClick={() => cancelAppointment(item._id)} className='text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-red-600 hover:text-white transition-all duration-300'>Cancel appointment</button>}
+              {item.cancelled && !item.isCompleted && <button className='sm:min-w-48 py-2 border border-red-500 rounded text-red-500'>Appointment cancelled</button>}
               {item.isCompleted && <button className='sm:min-w-48 py-2 border border-green-500 rounded text-green-500'>Completed</button>}
             </div>
           </div>
         ))}
       </div>
+
+      {/* bKash Payment Modal */}
+      {showPaymentModal && selectedAppointment && (
+        <div className='fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4'>
+          <div className='bg-white rounded-lg w-full max-w-md p-6'>
+            <h2 className='text-xl font-semibold mb-4'>Pay with bKash</h2>
+            
+            <div className='bg-pink-50 border border-pink-200 rounded-lg p-4 mb-4'>
+              <p className='text-sm text-gray-700 mb-2'>Send money to this bKash number:</p>
+              <p className='text-2xl font-bold text-pink-600 mb-3'>01812190086</p>
+              <p className='text-sm text-gray-700'>Amount: <span className='font-semibold'>৳{selectedAppointment.amount}</span></p>
+            </div>
+
+            <div className='mb-4'>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Enter your bKash Transaction ID *
+              </label>
+              <input
+                type='text'
+                value={transactionId}
+                onChange={(e) => setTransactionId(e.target.value)}
+                placeholder='e.g., 8A4B2C1D9E'
+                className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary'
+              />
+              <p className='text-xs text-gray-500 mt-1'>This will be used for payment verification</p>
+            </div>
+
+            <div className='flex gap-3'>
+              <button
+                onClick={() => {
+                  setShowPaymentModal(false)
+                  setSelectedAppointment(null)
+                  setTransactionId('')
+                }}
+                className='flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50'
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitBkashPayment}
+                className='flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark'
+              >
+                Submit Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

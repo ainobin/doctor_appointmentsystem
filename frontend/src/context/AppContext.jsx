@@ -13,9 +13,9 @@ const AppContextProvider = (props) => {
 
     const[doctors,setDoctors]=useState([])
 
-    const [token,setToken]=useState(localStorage.getItem('token')?localStorage.getItem('token'):false)
+    const [token,setToken]=useState(localStorage.getItem('token') || '')
     
-    const [userData,setUserData]=useState(false)
+    const [userData,setUserData]=useState(null)
 
 
 
@@ -75,8 +75,10 @@ const AppContextProvider = (props) => {
  useEffect(() => { 
     if (token) {
         loadUserProfileData()
-    }else{
-        setUserData(false)
+        localStorage.setItem('token', token)
+    } else {
+        setUserData(null)
+        localStorage.removeItem('token')
     }
     }, [token])
 

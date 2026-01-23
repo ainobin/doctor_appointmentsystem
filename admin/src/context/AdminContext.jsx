@@ -1,15 +1,15 @@
 
-import { createContext, useState } from 'react'; 
+import { createContext, useState, useEffect } from 'react'; 
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
 export const AdminContext = createContext();
 
 const AdminContextProvider = (props) => {
-  const [aToken, setAToken] = useState(localStorage.getItem('aToken')?localStorage.getItem('aToken'):''); // প্রাথমিক ভ্যালু হিসেবে খালি স্ট্রিং দিতে পারেন
+  const [aToken, setAToken] = useState(localStorage.getItem('aToken') || '');
   const [doctors,setDoctors] = useState([]);
   const [appointments,setAppointments]=useState([]) 
-  const [dashData,setDashData]=useState(false)
+  const [dashData,setDashData]=useState(null)
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   
   const getAllDoctors = async () => {
@@ -89,6 +89,14 @@ const getDashData=async()=>{
     }
 }
  
+
+  useEffect(() => {
+    if (aToken) {
+      localStorage.setItem('aToken', aToken)
+    } else {
+      localStorage.removeItem('aToken')
+    }
+  }, [aToken])
 
   const value = {
     aToken,

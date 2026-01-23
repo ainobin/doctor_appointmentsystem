@@ -3,6 +3,7 @@ import doctorModel from "../models/doctorModel.js"
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import appointmentModel from "../models/appointmentModel.js"
+import prescriptionModel from "../models/prescriptionModel.js"
 
 const changeAvailability = async (req,res) => {
     try {
@@ -203,6 +204,96 @@ const updateDoctorProfile = async (req, res) => {
 
 }
 
+// API to add prescription for completed appointment
+const addPrescription = async (req, res) => {
+    try {
+        const docId = req.docId
+        const { appointmentId, diagnosis, medications, instructions, followUpDate } = req.body
+
+        const appointmentData = await appointmentModel.findById(appointmentId)
+
+        if (!appointmentData || appointmentData.docId !== docId) {
+            return res.json({ success: false, message: 'Unauthorized' })
+        }
+
+        const prescription = new prescriptionModel({
+            appointmentId,
+            userId: appointmentData.userId,
+            docId,
+            patientName: appointmentData.userData.name,
+            doctorName: appointmentData.docData.name,
+            diagnosis,
+            medications,
+            instructions,
+            followUpDate
+        })
+
+        await prescription.save()
+
+        // Update appointment with prescription ID
+        await appointmentModel.findByIdAndUpdate(appointmentId, { 
+            prescriptionId: prescription._id,
+            isCompleted: true 
+        })
+
+        res.json({ success: true, message: 'Prescription added successfully' })
+
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+// API to get patient history (all past prescriptions for a patient)
+const getPatientHistory = async (req, res) => {
+    try {
+        const docId = req.docId
+        const { userId } = req.params
+
+        // Verify doctor is viewing their own patient
+        const appointments = await appointmentModel.find({ userId, docId })
+        
+        if (appointments.length === 0) {
+            return res.json({ success: false, message: 'Patient not found' })
+        }
+
+        // Get all prescriptions for this patient from this doctor
+        const prescriptions = await prescriptionModel.find({ userId, docId }).sort({ date: -1 })
+
+        res.json({ success: true, prescriptions })
+
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+// API to get prescription by appointment ID
+const getPrescriptionByAppointment = async (req, res) => {
+    try {
+        const docId = req.docId
+        const { appointmentId } = req.params
+
+        const appointmentData = await appointmentModel.findById(appointmentId)
+
+        if (!appointmentData || appointmentData.docId !== docId) {
+            return res.json({ success: false, message: 'Unauthorized' })
+        }
+
+        if (!appointmentData.prescriptionId) {
+            return res.json({ success: false, message: 'No prescription found' })
+        }
+
+        const prescription = await prescriptionModel.findById(appointmentData.prescriptionId)
+
+        res.json({ success: true, prescription })
+
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
 export {
     changeAvailability,
     doctorList,
@@ -212,5 +303,8 @@ export {
     appointmentComplete,
     doctorDashboard,
     doctorProfile,
-    updateDoctorProfile
+    updateDoctorProfile,
+    addPrescription,
+    getPatientHistory,
+    getPrescriptionByAppointment
 }
